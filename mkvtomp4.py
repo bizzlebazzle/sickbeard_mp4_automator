@@ -57,7 +57,9 @@ class MkvtoMp4:
                  logger=None,
                  threads='auto',
                  preopts=None,
-                 postopts=None):
+                 postopts=None,
+                 minimum_size=None
+                 ):
         # Setup Logging
         if logger:
             self.log = logger
@@ -80,6 +82,7 @@ class MkvtoMp4:
         self.permissions = permissions
         self.preopts = preopts
         self.postopts = postopts
+        self.minimum_size = minimum_size
         # Video settings
         self.video_codec = video_codec
         self.video_bitrate = video_bitrate
@@ -137,6 +140,7 @@ class MkvtoMp4:
         self.permissions = settings.permissions
         self.preopts = settings.preopts
         self.postopts = settings.postopts
+        self.minimum_size = settings.minimum_size
         # Video settings
         self.video_codec = settings.vcodec
         self.video_bitrate = settings.vbitrate
@@ -263,12 +267,16 @@ class MkvtoMp4:
     # Determine if a file meets the criteria for processing
     def needProcessing(self, inputfile):
         input_extension = self.parseFile(inputfile)[2]
-        # Make sure input and output extensions are compatible. If processMP4 is true, then make sure the input extension is a valid output extension and allow to proceed as well
-        if (input_extension.lower() in valid_input_extensions or (self.processMP4 is True and input_extension.lower() in valid_output_extensions)) and self.output_extension.lower() in valid_output_extensions:
+        file_size = self.parseFile(inputfile)[3] >> 20
+        print("file size is %s." % file_size)
+        # Make sure input and output extensions are compatible. If processMP4 is true, then make sure the input extension is a valid output extension and allow to proceed as well. If minimum size is specified check the file is larger than this (in MB)
+        if (input_extension.lower() in valid_input_extensions or (self.processMP4 is True and input_extension.lower() in valid_output_extensions)) and self.output_extension.lower() in valid_output_extensions and self.minimum_size is None or file_size >= self.minimum_size:
             self.log.debug("%s needs processing." % inputfile)
+            print("detected file does need processing")
             return True
         else:
             self.log.debug("%s does not need processing." % inputfile)
+            print("detected file does NOT need processing")
             return False
 
     # Get values for width and height to be passed to the tagging classes for proper HD tags
@@ -297,7 +305,7 @@ class MkvtoMp4:
     # Generate a list of options to be passed to FFMPEG based on selected settings and the source file parameters and streams
     def generateOptions(self, inputfile, original=None):
         # Get path information from the input file
-        input_dir, filename, input_extension = self.parseFile(inputfile)
+        input_dir, filename, input_extension, file_size = self.parseFile(inputfile)
 
         info = Converter(self.FFMPEG_PATH, self.FFPROBE_PATH).probe(inputfile)
 
@@ -563,7 +571,7 @@ class MkvtoMp4:
 
                         forced = ".forced" if s.sub_forced else ""
 
-                        input_dir, filename, input_extension = self.parseFile(inputfile)
+                        input_dir, filename, input_extension, file_size = self.parseFile(inputfile)
                         output_dir = input_dir if self.output_dir is None else self.output_dir
                         outputfile = os.path.join(output_dir, filename + "." + s.metadata['language'] + forced + "." + extension)
 
@@ -722,7 +730,7 @@ class MkvtoMp4:
     def convert(self, inputfile, options, reportProgress=False):
         self.log.info("Starting conversion.")
 
-        input_dir, filename, input_extension = self.parseFile(inputfile)
+        input_dir, filename, input_extension, file_size = self.parseFile(inputfile)
         output_dir = input_dir if self.output_dir is None else self.output_dir
         try:
             outputfile = os.path.join(output_dir.decode(sys.getfilesystemencoding()), filename.decode(sys.getfilesystemencoding()) + "." + self.output_extension).encode(sys.getfilesystemencoding())
@@ -777,17 +785,18 @@ class MkvtoMp4:
 
         return outputfile, inputfile
 
-    # Break apart a file path into the directory, filename, and extension
+    # Break apart a file path into the directory, filename, extension and size
     def parseFile(self, path):
         path = os.path.abspath(path)
         input_dir, filename = os.path.split(path)
         filename, input_extension = os.path.splitext(filename)
         input_extension = input_extension[1:]
-        return input_dir, filename, input_extension
+        file_size = os.stat(path).st_size
+        return input_dir, filename, input_extension, file_size
 
     # Process a file with QTFastStart, removing the original file
     def QTFS(self, inputfile):
-        input_dir, filename, input_extension = self.parseFile(inputfile)
+        input_dir, filename, input_extension, file_size = self.parseFile(inputfile)
         temp_ext = '.QTFS'
         # Relocate MOOV atom to the very beginning. Can double the time it takes to convert a file but makes streaming faster
         if self.parseFile(inputfile)[2] in valid_output_extensions and os.path.isfile(inputfile) and self.relocate_moov:

@@ -99,6 +99,7 @@ General MP4 Configuration
     - `sub-providers` = Comma separated values for potential subtitle providers. Must specify at least 1 provider to enable `download-subs`. Providers include `podnapisi` `thesubdb` `opensubtitles` `tvsubtitles` `addic7ed`
     - `preopts` = Additional unsupported options that go before the rest of the FFMPEG parameters, comma separated (Example `-preset,medium`)
     - `postopts` = Additional unsupported options that go after the rest of the FFMEPG parameters, comma separated as above
+    - 'minimum_size' = Specify a minimum size to trigger transcoding (in MB), files smaller than this will be skipped
 
 Sickbeard Setup
 --------------
@@ -374,6 +375,8 @@ optional arguments:
                         functionality
   -cmp4, --convertmp4   Overrides convert-mp4 setting in autoProcess.ini
                         enabling the reprocessing of mp4 files
+  -ms, --minsize        Specify a minimum size (in MB) to trigger processing,
+                        files smaller than this will be skipped
 ```
 
 Examples

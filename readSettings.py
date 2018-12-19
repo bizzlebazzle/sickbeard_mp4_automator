@@ -112,7 +112,8 @@ class ReadSettings:
                         'post-process': 'False',
                         'pix-fmt': '',
                         'preopts': '',
-                        'postopts': ''}
+                        'postopts': '',
+                        'minimum_size': ''}
         # Default settings for CouchPotato
         cp_defaults = {'host': 'localhost',
                        'port': '5050',
@@ -517,6 +518,16 @@ class ReadSettings:
         else:
             self.postopts = self.postopts.split(',')
             [o.strip() for o in self.postopts]
+
+        self.minimum_size = config.get(section, "minimum_size")
+        if self.minimum_size == '':
+            self.minimum_size = None
+        else:
+            try:
+                self.minimum_size = int(self.minimum_size)
+            except:
+                log.exception("Invalid minimum size, defaulting to none.")
+                self.minimum_size = None
 
         # Read relevant CouchPotato section information
         section = "CouchPotato"

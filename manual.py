@@ -284,6 +284,7 @@ def main():
     parser.add_argument('-pr', '--preserveRelative', action='store_true', help="Preserves relative directories when processing multiple files using the copy-to or move-to functionality")
     parser.add_argument('-cmp4', '--convertmp4', action='store_true', help="Overrides convert-mp4 setting in autoProcess.ini enabling the reprocessing of mp4 files")
     parser.add_argument('-m', '--moveto', help="Override move-to value setting in autoProcess.ini changing the final destination of the file")
+    parser.add_argument('-ms', '--minsize', help="Specify a minimum file size in MB to trigger conversion")
 
     args = vars(parser.parse_args())
 
@@ -325,6 +326,9 @@ def main():
     if (args['nopost']):
         settings.postprocess = False
         print("No post processing enabled")
+    if (args['minsize']):
+        settings.minimum_size = args['minsize']
+        print("Minimum size set to " + args['minsize'])
 
     # Establish the path we will be working with
     if (args['input']):
